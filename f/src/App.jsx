@@ -17,6 +17,7 @@ import EmergencyContacts from "./component/EmergencyContacts";
 import TripDetails from "./component/TripDetails";
 import  Loader  from "./component/Loader";
 import ViewUserProfile from "./component/ViewUserProfile";
+// import TripTracker from "./component/TripTracker";
 
 const App = () => {
   const { checkAuth, isCheckingAuth, isAuthenticated } = useAuthStore();
@@ -44,7 +45,8 @@ const routes = createBrowserRouter([
       { path: "/trip-lists", element: <TripList /> },
       {path:"/trip/:tripId" , element: <TripDetails />},
       {path:"/emergency-contacts", element : <EmergencyContacts />},
-      {path:"/view-profile", element: <ViewUserProfile />}
+      {path:"/view-profile", element: <ViewUserProfile />},
+      // {path:"/trip-started" , element: <TripTracker />}
     ],
   },
 

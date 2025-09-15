@@ -6,6 +6,7 @@ const useAuthStore = create((set) => ({
   isRegistering: false,
   isAuthenticated: false,
   isCheckingAuth: true,
+  isLogging: false,
 
   register: async (name, email, password) => {
     try {
@@ -19,39 +20,53 @@ const useAuthStore = create((set) => ({
         set({ user: res.data.user, isAuthenticated: true });
       }
     } catch (error) {
-      console.log(error);
+      console.error("Error in registration:", error);
+      throw error; // so component can catch it
     } finally {
       set({ isRegistering: false });
     }
   },
 
   login: async (email, password) => {
-    const res = await api.post(
-      "/user/login",
-      { email, password },
-      { withCredentials: true }
-    );
-    set({ user: res.data.user, isAuthenticated: true });
-    return res.data;
+    console.log(email,password)
+    try {
+      set({ isLogging: true });
+      const res = await api.post(
+        "/user/login",
+        { email, password },
+        { withCredentials: true }
+      );
+      set({ user: res.data.user, isAuthenticated: true });
+      return res.data;
+    } catch (error) {
+      console.error("Error in login:", error);
+      throw error; //  handle error with toast
+    } finally {
+      set({ isLogging: false });
+    }
   },
 
   checkAuth: async () => {
     try {
       const res = await api.get("/user/me", { withCredentials: true });
-      set({ user: res.data.user, isAuthenticated: true, isCheckingAuth: false });
+      set({
+        user: res.data.user,
+        isAuthenticated: true,
+        isCheckingAuth: false,
+      });
     } catch (err) {
       set({ user: null, isAuthenticated: false, isCheckingAuth: false });
     }
   },
 
   logout: async () => {
-      try{
-         await api.post("/user/logout", {} , {withCredentials:true})
-         set({user: null,isAuthenticated: false})
-      }catch(err){
-        console.error("error in logging out")
-      }
-  }
+    try {
+      await api.post("/user/logout", {}, { withCredentials: true });
+      set({ user: null, isAuthenticated: false });
+    } catch (err) {
+      console.error("Error in logging out:", err);
+    }
+  },
 }));
 
 export default useAuthStore;

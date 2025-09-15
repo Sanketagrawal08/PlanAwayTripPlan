@@ -5,7 +5,7 @@ import toast from "react-hot-toast";
 
 const Register = () => {
   const [form, setForm] = useState({ name: "", email: "", password: "" });
-  const { register, isAuthenticated } = useAuthStore();
+  const { register, isAuthenticated, isRegistering } = useAuthStore();
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -18,6 +18,7 @@ const Register = () => {
       await register(form.name, form.email, form.password);
       toast.success("Registration successful!");
       setForm({ name: "", email: "", password: "" });
+      navigate("/home")
     } catch (err) {
       console.error(err);
       toast.error("Registration failed. Please try again.");
@@ -32,8 +33,6 @@ const Register = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
-    
-
       <div className="bg-white shadow-xl rounded-2xl p-8 w-full max-w-md">
         <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">
           Create a New Account
@@ -87,9 +86,14 @@ const Register = () => {
 
           <button
             type="submit"
-            className="w-full bg-indigo-600 text-white py-2 rounded-lg font-semibold hover:bg-indigo-700 transition duration-300"
+            disabled={isRegistering}
+            className={`w-full py-2 rounded-lg font-semibold transition duration-300 ${
+              isRegistering
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-indigo-600 text-white hover:bg-indigo-700"
+            }`}
           >
-            Register
+            {isRegistering ? "Registering..." : "Register"}
           </button>
         </form>
 

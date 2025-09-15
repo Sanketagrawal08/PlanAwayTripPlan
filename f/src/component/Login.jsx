@@ -5,7 +5,7 @@ import toast from "react-hot-toast";
 
 const Login = () => {
   const [form, setForm] = useState({ email: "", password: "" });
-  const { login, isAuthenticated } = useAuthStore();
+  const { login, isAuthenticated, isLogging } = useAuthStore();
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -17,6 +17,7 @@ const Login = () => {
     try {
       await login(form.email, form.password);
       toast.success("Login successful!");
+      setForm({ email: "", password: "" }); // clear fields on success
     } catch (err) {
       console.error(err);
       toast.error("Login failed. Check your credentials.");
@@ -31,7 +32,6 @@ const Login = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
-    
       <div className="bg-white shadow-xl rounded-2xl p-8 w-full max-w-md">
         <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">
           Login to Your Account
@@ -70,9 +70,14 @@ const Login = () => {
 
           <button
             type="submit"
-            className="w-full bg-indigo-600 text-white py-2 rounded-lg font-semibold hover:bg-indigo-700 transition duration-300"
+            disabled={isLogging}
+            className={`w-full text-white py-2 rounded-lg font-semibold transition duration-300 ${
+              isLogging
+                ? "bg-indigo-400 cursor-not-allowed"
+                : "bg-indigo-600 hover:bg-indigo-700"
+            }`}
           >
-            Login
+            {isLogging ? "Logging in..." : "Login"}
           </button>
         </form>
 

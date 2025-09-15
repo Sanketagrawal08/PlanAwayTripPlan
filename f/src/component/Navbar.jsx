@@ -9,6 +9,7 @@ const Navbar = () => {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  console.log(user)
 
   const goToTrips = () => {
     navigate("/trip-lists");
@@ -116,14 +117,16 @@ const Navbar = () => {
               {/* User Profile */}
               <div
                 onClick={goToProfile}
-                className="flex cursor-pointer items-center gap-3 bg-gradient-to-r from-gray-800 to-gray-700 hover:from-gray-700 hover:to-gray-600 text-white font-medium px-4 py-2 rounded-full shadow-md transition-all duration-200"
+                className="flex cursor-pointer items-center gap-3 bg-gradient-to-r from-gray-900 to-gray-700 hover:from-gray-700 hover:to-gray-600 text-white font-medium px-4 py-2 rounded-full shadow-md transition-all"
               >
                 <div className="w-8 h-8 bg-gradient-to-br from-indigo-400 to-purple-500 rounded-full flex items-center justify-center">
                   <span className="text-sm font-bold text-white">
                     {user?.name?.charAt(0)?.toUpperCase() || 'U'}
                   </span>
                 </div>
-                <span className="hidden lg:block">Hello, {user?.name || "User"}</span>
+               <div>
+                 <span className="hidden lg:block">Hello, {user?.name || "User"}</span>
+               </div>
               </div>
             </div>
           </div>
@@ -154,6 +157,7 @@ const Navbar = () => {
               </div>
               <div>
                 <p className="font-semibold">Hello, {user?.name || "User"}</p>
+               
                 <p className="text-sm text-gray-300">View Profile</p>
               </div>
             </div>
