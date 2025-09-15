@@ -1,6 +1,6 @@
 import axios from "axios";
 
-//for local use
+// for local use
 // const API_BASE_URL = "http://localhost:5000"
 
 //for productikon //backend heignore the link

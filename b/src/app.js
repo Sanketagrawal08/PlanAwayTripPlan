@@ -4,6 +4,9 @@ import authRoutes from "./routes/auth.routes.js";
 import tripRoutes from "./routes/trip.routes.js"
 import connecttodb from "./db/db.js";
 import cookieparser from "cookie-parser"
+import dotenv from "dotenv"
+dotenv.config()
+
 const app = express();
 
 // Middleware

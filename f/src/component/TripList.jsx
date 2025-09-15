@@ -93,7 +93,7 @@ console.log(trips)
                 Start planning your next amazing journey! Create your first trip and begin exploring the world.
               </p>
               <button
-                onClick={() => navigate("/create-trip")}
+                onClick={() => navigate("/trip-form")}
                 className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 px-8 rounded-xl shadow-lg transition-all duration-200 transform hover:scale-105"
               >
                 Plan Your First Trip
