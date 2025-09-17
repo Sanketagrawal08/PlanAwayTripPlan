@@ -43,6 +43,8 @@ const tripSchema = new mongoose.Schema({
   },
   participants: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   invites: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+  started:{type:Boolean , default:false},
+  startTime: { type: Date }
 });
 
 const TripModel = mongoose.model("Trip", tripSchema);

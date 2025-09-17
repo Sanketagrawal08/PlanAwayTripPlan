@@ -1,4 +1,6 @@
-import cohere from "../services/cohereclient.js";
+import dotenv from "dotenv"
+dotenv.config()
+// import cohere from "../services/cohereclient.js";
 import { jsonrepair } from "jsonrepair";
 import axios from "axios";
 import TripModel from "../models/trip.model.js";
@@ -7,7 +9,10 @@ import userModel from "../models/user.model.js";
 import sendEmail from "../utils/sendEmail.js";
 const UNSPLASH_KEY = "A37NTQMDIgFMWbq5kq1uEslTH8hWwVnDSi4ZYfKTdJE";
 const FALLBACK_IMAGE = "https://via.placeholder.com/400x300?text=No+Image";
-
+import {GoogleGenerativeAI} from "@google/generative-ai"
+const GEMINI_API = process.env.GEMINI_API;
+if (!GEMINI_API) throw new Error("GEMINI_API is not set in .env");
+const genAi = new GoogleGenerativeAI(GEMINI_API);
 // Function to fetch Unsplash image for a place
 async function fetchPlacePhoto(placeName) {
   try {
@@ -34,9 +39,9 @@ Return the result STRICTLY in this JSON format:
   "trip_outline": [
     {
       "day": 1,
-      "morning": { "place": "Place Name", "ticket_price": 200, "best_time_to_visit": "09:00–12:00" },
-      "afternoon": { "place": "Place Name", "ticket_price": 300, "best_time_to_visit": "12:00–16:00" },
-      "evening": { "place": "Place Name", "ticket_price": 100, "best_time_to_visit": "16:00–20:00" }
+      "morning": { "place": "Place Name", "best_time_to_visit": "09:00–12:00" },
+      "afternoon": { "place": "Place Name", "best_time_to_visit": "12:00–16:00" },
+      "evening": { "place": "Place Name", "best_time_to_visit": "16:00–20:00" }
     }
   ]
 }
@@ -44,22 +49,22 @@ Return the result STRICTLY in this JSON format:
 Rules:
 - Only valid JSON, no markdown, no extra text.
 - Each day must have morning, afternoon, evening keys.
-- Include ticket_price (integer) and best_time_to_visit (string).
+- Include  best_time_to_visit (string).
 - trip_outline must have exactly ${days} entries.
 `;
 
   try {
-    const response = await cohere.generate({
-      model: "command-r-plus",
-      prompt,
-      max_tokens: 4000,
-      temperature: 0.7,
-    });
+    // 1️⃣ Get Gemini model
+    const model = genAi.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-    let rawText = response.generations?.[0]?.text;
+    // 2️⃣ Generate content
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const rawText = response.text();
+
     let tripData;
 
-    // Parse JSON safely
+    // 3️⃣ Parse JSON safely
     try {
       tripData = JSON.parse(rawText);
     } catch (err) {
@@ -72,10 +77,14 @@ Rules:
       }
     }
 
-    // Fetch images for all places
-    for (const day of tripData.trip_outline || []) {
-      for (const time of ["morning", "afternoon", "evening"]) {
+    // 4️⃣ Fetch images for all places
+    for (let i = 0; i < tripData.trip_outline.length; i++) {
+      const day = tripData.trip_outline[i];
+      const times = ["morning", "afternoon", "evening"];
+      for (let j = 0; j < times.length; j++) {
+        const time = times[j];
         const place = day[time];
+
         if (place && place.place) {
           place.place_image_url = await fetchPlacePhoto(place.place);
         } else {
@@ -84,9 +93,10 @@ Rules:
       }
     }
 
+    // 5️⃣ Send response
     res.json({ overview: tripData });
   } catch (err) {
-    console.error("❌ Cohere Error:", err);
+    console.error("❌ Gemini API Error:", err);
     res.status(500).json({ error: "Failed to generate trip overview" });
   }
 };
@@ -459,16 +469,30 @@ export const getHotels = async (req, res) => {
 };
 
 
+export const startTripController = async (req, res) => {
+  try {
+    const { tripId } = req.params;
+    const userId = req.user.id || req.user._id;
 
+    const trip = await TripModel.findById(tripId);
+    if (!trip) return res.status(404).json({ message: "Trip not found" });
 
+    // Only owner can start trip
+    if (trip.owner.toString() !== userId) {
+      return res.status(403).json({ message: "Only owner can start the trip" });
+    }
 
+    trip.started = true; // You can track trip status
+    trip.startTime = new Date();
 
+    await trip.save();
 
-
-
-
-
-
+    res.json({ message: "Trip started successfully", trip });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error in startTripController" });
+  }
+};
 
 
 

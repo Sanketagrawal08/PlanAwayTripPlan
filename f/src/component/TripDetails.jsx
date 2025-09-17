@@ -1,7 +1,16 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import api from "../api";
-import { UserPlus, ArrowLeft, Users, CalendarDays, Clock, MapPin, Star, Heart } from "lucide-react";
+import {
+  UserPlus,
+  ArrowLeft,
+  Users,
+  CalendarDays,
+  Clock,
+  MapPin,
+  Star,
+  Heart,
+} from "lucide-react";
 import toast from "react-hot-toast";
 
 const TripDetails = () => {
@@ -10,6 +19,7 @@ const TripDetails = () => {
   const [trip, setTrip] = useState(null);
   const [loading, setLoading] = useState(true);
   const [inviteEmail, setInviteEmail] = useState("");
+  const [tripStarted, setTripStarted] = useState(false);
 
   useEffect(() => {
     fetchTrip();
@@ -19,6 +29,7 @@ const TripDetails = () => {
     try {
       const res = await api.get(`/trip/view-trip/${tripId}`);
       setTrip(res.data);
+      setTripStarted(res.data.started)
     } catch (err) {
       console.error("Error fetching trip:", err);
       toast.error("Failed to load trip");
@@ -42,24 +53,37 @@ const TripDetails = () => {
   const respondInvite = async (action) => {
     try {
       await api.post(`/trip/${tripId}/${action}`);
-      toast.success(`Invite ${action === "accept" ? "Accepted 🎉" : "Rejected 🚫"}`);
+      toast.success(
+        `Invite ${action === "accept" ? "Accepted 🎉" : "Rejected 🚫"}`
+      );
       fetchTrip();
     } catch (err) {
       toast.error("Error responding to invite ❌");
     }
   };
 
-  const startTrip = async () => {
-    toast.success("Trip started 🚀");
-    // optionally call backend
-  };
+ const startTrip = async () => {
+  try {
+    const res = await api.post(`/trip/${tripId}/start`);
+    toast.success(res.data.message);
+    setTripStarted(true); // now the button is disabled
+  } catch (err) {
+    toast.error(err.response?.data?.message || "Error starting trip");
+    if (err.response?.data?.message === "Trip already started") {
+      setTripStarted(true); 
+    }
+  }
+};
+
 
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-xl text-gray-600 font-medium">Loading your amazing trip...</p>
+          <p className="text-xl text-gray-600 font-medium">
+            Loading your amazing trip...
+          </p>
         </div>
       </div>
     );
@@ -70,8 +94,12 @@ const TripDetails = () => {
       <div className="min-h-screen bg-gradient-to-br from-red-50 to-pink-100 flex items-center justify-center">
         <div className="text-center bg-white p-8 rounded-3xl shadow-xl">
           <div className="text-6xl mb-4">😕</div>
-          <p className="text-2xl text-red-600 font-bold mb-2">Oops! Trip not found</p>
-          <p className="text-gray-600">The trip you're looking for doesn't exist or has been removed.</p>
+          <p className="text-2xl text-red-600 font-bold mb-2">
+            Oops! Trip not found
+          </p>
+          <p className="text-gray-600">
+            The trip you're looking for doesn't exist or has been removed.
+          </p>
         </div>
       </div>
     );
@@ -85,7 +113,7 @@ const TripDetails = () => {
           onClick={() => navigate(-1)}
           className="flex items-center gap-3 text-slate-700 hover:text-blue-600 mb-8 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 border border-white/20"
         >
-          <ArrowLeft className="w-5 h-5" /> 
+          <ArrowLeft className="w-5 h-5" />
           <span className="font-medium">Back to Trips</span>
         </button>
 
@@ -101,11 +129,15 @@ const TripDetails = () => {
                 <div className="flex flex-col sm:flex-row gap-4 text-white/90">
                   <div className="flex items-center gap-2">
                     <CalendarDays className="w-5 h-5 text-white/80" />
-                    <span>Created {new Date(trip.createdAt).toLocaleDateString()}</span>
+                    <span>
+                      Created {new Date(trip.createdAt).toLocaleDateString()}
+                    </span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Users className="w-5 h-5 text-white/80" />
-                    <span className="capitalize font-semibold">{trip.userRole}</span>
+                    <span className="capitalize font-semibold">
+                      {trip.userRole}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -124,9 +156,11 @@ const TripDetails = () => {
                 <div className="p-2 bg-green-100 rounded-full">
                   <Users className="w-6 h-6 text-green-600" />
                 </div>
-                <h3 className="text-2xl font-bold text-gray-800">Trip Companions</h3>
+                <h3 className="text-2xl font-bold text-gray-800">
+                  Trip Companions
+                </h3>
               </div>
-              
+
               {trip.participants?.length > 0 ? (
                 <div className="flex flex-col gap-4">
                   {trip.participants.map((p) => (
@@ -138,7 +172,9 @@ const TripDetails = () => {
                         {p.name.charAt(0).toUpperCase()}
                       </div>
                       <div className="flex-1">
-                        <p className="font-semibold text-gray-800 text-lg">{p.name}</p>
+                        <p className="font-semibold text-gray-800 text-lg">
+                          {p.name}
+                        </p>
                         <p className="text-gray-600">{p.email}</p>
                       </div>
                     </div>
@@ -147,7 +183,9 @@ const TripDetails = () => {
               ) : (
                 <div className="text-center py-8">
                   <div className="text-4xl mb-4">👥</div>
-                  <p className="text-gray-500 text-lg">No companions yet - invite some friends!</p>
+                  <p className="text-gray-500 text-lg">
+                    No companions yet - invite some friends!
+                  </p>
                 </div>
               )}
             </section>
@@ -159,9 +197,11 @@ const TripDetails = () => {
                   <div className="p-2 bg-amber-100 rounded-full">
                     <Clock className="w-6 h-6 text-amber-600" />
                   </div>
-                  <h3 className="text-2xl font-bold text-gray-800">Pending Invites</h3>
+                  <h3 className="text-2xl font-bold text-gray-800">
+                    Pending Invites
+                  </h3>
                 </div>
-                
+
                 <div className="flex flex-col gap-4">
                   {trip.invites.map((i) => (
                     <div
@@ -172,9 +212,13 @@ const TripDetails = () => {
                         {i.name.charAt(0).toUpperCase()}
                       </div>
                       <div className="flex-1">
-                        <p className="font-semibold text-gray-800 text-lg">{i.name}</p>
+                        <p className="font-semibold text-gray-800 text-lg">
+                          {i.name}
+                        </p>
                         <p className="text-gray-600">{i.email}</p>
-                        <p className="text-amber-600 text-sm font-medium">⏳ Awaiting response</p>
+                        <p className="text-amber-600 text-sm font-medium">
+                          ⏳ Awaiting response
+                        </p>
                       </div>
                     </div>
                   ))}
@@ -189,9 +233,7 @@ const TripDetails = () => {
             {trip.userRole === "owner" && (
               <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-white/20">
                 <h4 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-                  
-                    <UserPlus className="w-5 h-5 text-green-600" />
-                  
+                  <UserPlus className="w-5 h-5 text-green-600" />
                   Invite Friends
                 </h4>
                 <div className="space-y-3">
@@ -215,7 +257,9 @@ const TripDetails = () => {
             {/* Accept/Reject Buttons */}
             {trip.userRole === "invited" && (
               <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-white/20">
-                <h4 className="text-xl font-bold text-gray-800 mb-4">Respond to Invite</h4>
+                <h4 className="text-xl font-bold text-gray-800 mb-4">
+                  Respond to Invite
+                </h4>
                 <div className="flex flex-col gap-3">
                   <button
                     onClick={() => respondInvite("accept")}
@@ -238,10 +282,11 @@ const TripDetails = () => {
               <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-white/20">
                 <button
                   onClick={startTrip}
+                  disabled={tripStarted}
                   className="w-full flex items-center justify-center gap-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-8 py-4 rounded-2xl hover:from-purple-700 hover:to-pink-700 transition-all duration-300 shadow-lg hover:shadow-xl font-bold text-lg"
                 >
                   <span className="text-2xl">🚀</span>
-                  Start Your Adventure
+                 {tripStarted ? "Ongoing" : "Start Your Trip"}
                 </button>
               </div>
             )}
@@ -251,10 +296,14 @@ const TripDetails = () => {
         {/* Trip Outline */}
         <section className="mt-12">
           <div className="text-center mb-10">
-            <h3 className="text-4xl font-bold text-gray-800 mb-4">Your Trip Journey</h3>
-            <p className="text-xl text-gray-600">Explore amazing places day by day</p>
+            <h3 className="text-4xl font-bold text-gray-800 mb-4">
+              Your Trip Journey
+            </h3>
+            <p className="text-xl text-gray-600">
+              Explore amazing places day by day
+            </p>
           </div>
-          
+
           {trip.tripOutline?.length > 0 ? (
             <div className="flex flex-col gap-8">
               {trip.tripOutline.map((day) => (
@@ -267,11 +316,15 @@ const TripDetails = () => {
                       {day.day}
                     </div>
                     <div>
-                      <h4 className="text-3xl font-bold text-gray-800">Day {day.day}</h4>
-                      <p className="text-gray-600">Three amazing experiences await</p>
+                      <h4 className="text-3xl font-bold text-gray-800">
+                        Day {day.day}
+                      </h4>
+                      <p className="text-gray-600">
+                        Three amazing experiences await
+                      </p>
                     </div>
                   </div>
-                  
+
                   <div className="flex flex-col lg:flex-row gap-6">
                     {["morning", "afternoon", "evening"].map((time) => (
                       <div
@@ -285,25 +338,33 @@ const TripDetails = () => {
                             className="w-full h-48 object-cover"
                           />
                           <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full">
-                            <span className="text-sm font-semibold capitalize text-gray-700">{time}</span>
+                            <span className="text-sm font-semibold capitalize text-gray-700">
+                              {time}
+                            </span>
                           </div>
                         </div>
-                        
+
                         <div className="p-6">
                           <h5 className="text-xl font-bold text-gray-900 mb-3 flex items-center gap-2">
                             <MapPin className="w-5 h-5 text-blue-600" />
                             {day[time].place}
                           </h5>
-                          
+
                           <div className="space-y-2">
                             <div className="flex items-center gap-2 text-gray-600">
                               <Clock className="w-4 h-4" />
-                              <span className="text-sm">Best time: {day[time].best_time_to_visit}</span>
+                              <span className="text-sm">
+                                Best time: {day[time].best_time_to_visit}
+                              </span>
                             </div>
                             <div className="flex items-center gap-2">
                               <Star className="w-4 h-4 text-amber-500" />
-                              <span className="text-lg font-bold text-green-600">₹{day[time].ticket_price}</span>
-                              <span className="text-sm text-gray-500">per person</span>
+                              <span className="text-lg font-bold text-green-600">
+                                ₹{day[time].ticket_price}
+                              </span>
+                              <span className="text-sm text-gray-500">
+                                per person
+                              </span>
                             </div>
                           </div>
                         </div>
@@ -316,8 +377,12 @@ const TripDetails = () => {
           ) : (
             <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-12 shadow-xl border border-white/20 text-center">
               <div className="text-6xl mb-6">🗺️</div>
-              <h4 className="text-2xl font-bold text-gray-800 mb-4">No itinerary yet</h4>
-              <p className="text-gray-600 text-lg">Your trip outline will appear here once it's ready</p>
+              <h4 className="text-2xl font-bold text-gray-800 mb-4">
+                No itinerary yet
+              </h4>
+              <p className="text-gray-600 text-lg">
+                Your trip outline will appear here once it's ready
+              </p>
             </div>
           )}
         </section>
