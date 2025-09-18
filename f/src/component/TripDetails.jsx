@@ -218,7 +218,7 @@ const TripDetails = () => {
             )}
 
             {/* Start Trip */}
-            {trip.userRole === "owner" && (
+            {/* {trip.userRole === "owner" && (
               <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-white/20">
                 <button
                   onClick={startTrip}
@@ -229,7 +229,7 @@ const TripDetails = () => {
                   {tripStarted ? "Ongoing" : "Start Your Trip"}
                 </button>
               </div>
-            )}
+            )} */}
 
             
           </div>
