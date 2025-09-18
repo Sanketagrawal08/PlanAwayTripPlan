@@ -27,7 +27,7 @@ const TripPreview = () => {
             navigate("/trip-lists")
         }
     } catch (error) {
-        console.log("error in saving trip")
+        console.log("error in saving trip", error)
        if (error.response?.data?.message === "Already Saved Trip") {
   toast.error("🤔 Trip Already Saved");
 } else {

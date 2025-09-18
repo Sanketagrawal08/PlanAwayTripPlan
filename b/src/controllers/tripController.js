@@ -124,7 +124,7 @@ export const saveTripController = async (req, res) => {
     return res.status(201).json({ message: "Trip saved successfully", trip });
   } catch (error) {
     console.error("Error saving trip:", error);
-    return res.status(500).json({ message: "Server error" });
+    return res.status(500).json({ message: "Server error", error: error });
   }
 };
 
