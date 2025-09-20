@@ -14,27 +14,11 @@ const daySchema = new mongoose.Schema({
   evening: { type: activitySchema },
 });
 
-// const locationSchema = new mongoose.Schema({
-//   user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-//   coordinates: {
-//     lat: { type: Number, required: true },
-//     lng: { type: Number, required: true },
-//   },
-//   lastUpdated:{type:Date , default:Date.now()}
-// });
-
-// const safetyCheckSchema = new mongoose.Schema({
-//   user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-//   createdAt: { type: Date, default: Date.now },
-//   confirmed: { type: Boolean, default: false },
-//   confirmedAt:{type:Date}
-// });
-
 const tripSchema = new mongoose.Schema({
   title: { type: String },
   owner: { type: mongoose.Schema.Types.ObjectId, required: true, ref: "User" },
   tripOutline: [daySchema],
-  destination: {type:String},
+  destination: { type: String },
   createdAt: { type: Date, default: Date.now },
   currentStatus: {
     type: String,
@@ -43,8 +27,10 @@ const tripSchema = new mongoose.Schema({
   },
   participants: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   invites: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
-  started:{type:Boolean , default:false},
-  startTime: { type: Date }
+  started: { type: Boolean, default: false },
+  startTime: { type: Date },
+  ended: { type: Boolean, default: false },       // boolean to track if trip ended
+  endTime: { type: Date },                        // actual end timestamp
 });
 
 const TripModel = mongoose.model("Trip", tripSchema);

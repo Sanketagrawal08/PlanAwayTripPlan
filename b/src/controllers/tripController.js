@@ -1,5 +1,5 @@
-import dotenv from "dotenv"
-dotenv.config()
+import dotenv from "dotenv";
+dotenv.config();
 // import cohere from "../services/cohereclient.js";
 import { jsonrepair } from "jsonrepair";
 import axios from "axios";
@@ -9,10 +9,12 @@ import userModel from "../models/user.model.js";
 import sendEmail from "../utils/sendEmail.js";
 const UNSPLASH_KEY = "A37NTQMDIgFMWbq5kq1uEslTH8hWwVnDSi4ZYfKTdJE";
 const FALLBACK_IMAGE = "https://via.placeholder.com/400x300?text=No+Image";
-import {GoogleGenerativeAI} from "@google/generative-ai"
+import { GoogleGenerativeAI } from "@google/generative-ai";
 const GEMINI_API = process.env.GEMINI_API;
 if (!GEMINI_API) throw new Error("GEMINI_API is not set in .env");
 const genAi = new GoogleGenerativeAI(GEMINI_API);
+import Location from "../models/location.model.js";
+
 // Function to fetch Unsplash image for a place
 async function fetchPlacePhoto(placeName) {
   try {
@@ -105,10 +107,10 @@ export const saveTripController = async (req, res) => {
   try {
     const userId = req.user.id || req.user._id;
 
-    const { title, tripOutline,destination } = req.body;
-    
-    const tripExist = await  TripModel.findOne({title , owner:userId})
-    if(tripExist) res.status(400).json({message:"Already Saved Trip"});    
+    const { title, tripOutline, destination } = req.body;
+
+    const tripExist = await TripModel.findOne({ title, owner: userId });
+    if (tripExist) res.status(400).json({ message: "Already Saved Trip" });
 
     if (!tripOutline) {
       return res.status(400).json({ message: "tripOutline is required" });
@@ -117,9 +119,9 @@ export const saveTripController = async (req, res) => {
       title,
       owner: userId,
       tripOutline,
-      destination:destination
+      destination: destination,
     });
-    
+
     await trip.save();
     return res.status(201).json({ message: "Trip saved successfully", trip });
   } catch (error) {
@@ -366,7 +368,6 @@ export const getTripListController = async (req, res) => {
   }
 };
 
-
 export const viewTrip = async (req, res) => {
   const { tripId } = req.params;
   const userId = req.user?.id || req.user?._id;
@@ -419,7 +420,6 @@ export const viewTrip = async (req, res) => {
 };
 
 export const getHotels = async (req, res) => {
-
   try {
     const {
       dest_id,
@@ -456,7 +456,6 @@ export const getHotels = async (req, res) => {
         "x-rapidapi-host": "booking-com15.p.rapidapi.com",
       },
     };
-    
 
     const response = await axios.request(options);
     res.status(200).json({ hotels: response.data });
@@ -467,7 +466,6 @@ export const getHotels = async (req, res) => {
       .json({ message: "Failed to fetch hotels", error: error.message });
   }
 };
-
 
 export const startTripController = async (req, res) => {
   try {
@@ -491,5 +489,61 @@ export const startTripController = async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error in startTripController" });
+  }
+};
+
+export const updateLocationController = async (req, res) => {
+  const userId = req.user.id || req.user._id;
+
+  const { tripId, latitude, longitude } = req.body;
+
+  let loc = await Location.findOne({ userId, tripId });
+  if (!loc) {
+    loc = new Location({ userId, tripId, latitude, longitude });
+  } else {
+    loc.latitude = latitude;
+    loc.longitude = longitude;
+    loc.updatedAt = new Date();
+  }
+
+  await loc.save();
+  res.json({ message: "Location updated" });
+};
+
+export const getLocations = async (req, res) => {
+  const { tripId } = req.params;
+  const locations = await Location.find({ tripId });
+  res.json({ locations });
+};
+
+export const endTrip = async (req, res) => {
+  try {
+    const { tripId } = req.params;
+
+    const trip = await TripModel.findById(tripId);
+    if (!trip) {
+      return res.status(404).json({ message: "Trip not found" });
+    }
+
+    if (trip.ended)
+      return res.status(500).json({
+        message: "Trip Already Ended",
+      });
+
+    trip.ended = true; // boolean
+    trip.endTime = Date.now(); // store the exact timestamp
+    trip.currentStatus = "ENDED"; // update status
+    await trip.save();
+
+    return res.status(200).json({
+      message: "Trip ended successfully",
+      tripEndTime: trip.endTime,
+      tripEnded: trip.ended,
+    });
+  } catch (err) {
+    console.error("Error in ending trip", err);
+    return res
+      .status(500)
+      .json({ message: "Trip not ended", error: err.message });
   }
 };

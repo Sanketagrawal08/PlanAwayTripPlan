@@ -6,24 +6,31 @@ import {
   ArrowLeft,
   Users,
   CalendarDays,
-  Clock,
   Heart,
-  MapPin,
-  Star,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import InviteFriends from "./InviteFriends";
-
-
+import LiveMap from "./LiveMap";
+import useAuthStore from "../store/authStore";
 
 const TripDetails = () => {
   const { tripId } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuthStore();
+
   const [trip, setTrip] = useState(null);
   const [loading, setLoading] = useState(true);
   const [inviteEmail, setInviteEmail] = useState("");
-  const [tripStarted, setTripStarted] = useState(false);
 
+  // Single state to track trip status
+  const [tripStatus, setTripStatus] = useState({
+    started: false,
+    ended: false,
+    startTime: null,
+    endTime: null,
+  });
+
+  // Fetch trip details
   useEffect(() => {
     fetchTrip();
   }, [tripId]);
@@ -32,7 +39,12 @@ const TripDetails = () => {
     try {
       const res = await api.get(`/trip/view-trip/${tripId}`);
       setTrip(res.data);
-      setTripStarted(res.data.started);
+      setTripStatus({
+        started: res.data.started,
+        ended: res.data.ended || res.data.endDate,
+        startTime: res.data.startTime,
+        endTime: res.data.endTime || res.data.endDate,
+      });
     } catch (err) {
       console.error("Error fetching trip:", err);
       toast.error("Failed to load trip");
@@ -41,6 +53,7 @@ const TripDetails = () => {
     }
   };
 
+  // Invite functions
   const sendInvite = async () => {
     if (!inviteEmail) return toast.error("Enter a valid email!");
     try {
@@ -56,25 +69,40 @@ const TripDetails = () => {
   const respondInvite = async (action) => {
     try {
       await api.post(`/trip/${tripId}/${action}`);
-      toast.success(
-        `Invite ${action === "accept" ? "Accepted 🎉" : "Rejected 🚫"}`
-      );
+      toast.success(`Invite ${action === "accept" ? "Accepted 🎉" : "Rejected 🚫"}`);
       fetchTrip();
     } catch (err) {
       toast.error("Error responding to invite ❌");
     }
   };
 
-  const startTrip = async () => {
+  // Start trip handler (optimistic update)
+  const startTripHandler = async () => {
+    if (tripStatus.started) return;
+    setTripStatus(prev => ({ ...prev, started: true, ended: false }));
+
     try {
       const res = await api.post(`/trip/${tripId}/start`);
       toast.success(res.data.message);
-      setTripStarted(true);
+      setTripStatus(prev => ({ ...prev, startTime: res.data.startTime || prev.startTime }));
     } catch (err) {
       toast.error(err.response?.data?.message || "Error starting trip");
-      if (err.response?.data?.message === "Trip already started") {
-        setTripStarted(true);
-      }
+      setTripStatus(prev => ({ ...prev, started: false }));
+    }
+  };
+
+  // End trip handler (optimistic update)
+  const endTripHandler = async () => {
+    if (tripStatus.ended) return;
+    setTripStatus(prev => ({ ...prev, started: false, ended: true }));
+
+    try {
+      const res = await api.post(`/trip/tripEnd/${tripId}`);
+      toast.success(res.data.message);
+      setTripStatus(prev => ({ ...prev, endTime: res.data.endTime || prev.endTime }));
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Error ending trip");
+      setTripStatus(prev => ({ ...prev, started: true, ended: false }));
     }
   };
 
@@ -137,7 +165,9 @@ const TripDetails = () => {
                   </div>
                   <div className="flex items-center gap-2">
                     <Users className="w-5 h-5 text-white/80" />
-                    <span className="capitalize font-semibold">{trip.userRole}</span>
+                    <span className="capitalize font-semibold">
+                      {trip.userRole}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -150,13 +180,71 @@ const TripDetails = () => {
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Left Column */}
           <div className="flex-1 space-y-8">
+            <section className="space-y-8 ">
+              {trip?.tripOutline?.map((dayPlan) => (
+                <div
+                  key={dayPlan._id}
+                  className="bg-white/90 backdrop-blur-md p-6 rounded-3xl shadow-xl border border-gray-200 hover:shadow-2xl transition-shadow duration-300"
+                >
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-3xl font-extrabold text-gray-800">
+                      Day {dayPlan.day}
+                    </h3>
+                    <span className="px-3 py-1 rounded-full bg-blue-100 text-blue-800 font-semibold text-sm">
+                      Itinerary
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {["morning", "afternoon", "evening"].map((slot) => {
+                      const period = dayPlan[slot];
+                      return (
+                        <div
+                          key={period._id}
+                          className="flex flex-col bg-gradient-to-br from-blue-50 to-indigo-50 p-4 rounded-2xl shadow hover:shadow-lg transition-all duration-300"
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <h4 className="font-semibold text-lg capitalize">
+                              {slot}
+                            </h4>
+                            <span className="text-sm text-gray-500">
+                              {period.best_time_to_visit}
+                            </span>
+                          </div>
+                          <p className="font-medium text-gray-700 mb-2">
+                            {period.place}
+                          </p>
+                          <p className="text-gray-500 mb-3">
+                            Ticket Price:{" "}
+                            <span className="font-semibold">
+                              ₹
+                              {period.ticket_price > 0
+                                ? `${period.ticket_price}`
+                                : "Not Available"}
+                            </span>
+                          </p>
+                          <img
+                            src={period.place_image_url}
+                            alt={period.place}
+                            className="w-full h-48 object-cover rounded-xl shadow-sm"
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </section>
+
             {/* Participants Section */}
             <section className="bg-white/80 backdrop-blur-sm rounded-3xl p-8 shadow-xl border border-white/20">
               <div className="flex items-center gap-3 mb-6">
                 <div className="p-2 bg-green-100 rounded-full">
                   <Users className="w-6 h-6 text-green-600" />
                 </div>
-                <h3 className="text-2xl font-bold text-gray-800">Trip Companions</h3>
+                <h3 className="text-2xl font-bold text-gray-800">
+                  Trip Companions
+                </h3>
               </div>
 
               {trip.participants?.length > 0 ? (
@@ -170,7 +258,9 @@ const TripDetails = () => {
                         {p.name.charAt(0).toUpperCase()}
                       </div>
                       <div className="flex-1">
-                        <p className="font-semibold text-gray-800 text-lg">{p.name}</p>
+                        <p className="font-semibold text-gray-800 text-lg">
+                          {p.name}
+                        </p>
                         <p className="text-gray-600">{p.email}</p>
                       </div>
                     </div>
@@ -179,7 +269,9 @@ const TripDetails = () => {
               ) : (
                 <div className="text-center py-8">
                   <div className="text-4xl mb-4">👥</div>
-                  <p className="text-gray-500 text-lg">No companions yet - invite some friends!</p>
+                  <p className="text-gray-500 text-lg">
+                    No companions yet - invite some friends!
+                  </p>
                 </div>
               )}
             </section>
@@ -190,16 +282,18 @@ const TripDetails = () => {
             {/* Invite Friend */}
             {trip.userRole === "owner" && (
               <InviteFriends
-               inviteEmail={inviteEmail}
-               setInviteEmail={setInviteEmail}
-               sendInvite={sendInvite}
+                inviteEmail={inviteEmail}
+                setInviteEmail={setInviteEmail}
+                sendInvite={sendInvite}
               />
             )}
 
             {/* Accept/Reject Buttons */}
             {trip.userRole === "invited" && (
               <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-white/20">
-                <h4 className="text-xl font-bold text-gray-800 mb-4">Respond to Invite</h4>
+                <h4 className="text-xl font-bold text-gray-800 mb-4">
+                  Respond to Invite
+                </h4>
                 <div className="flex flex-col gap-3">
                   <button
                     onClick={() => respondInvite("accept")}
@@ -217,24 +311,47 @@ const TripDetails = () => {
               </div>
             )}
 
-            {/* Start Trip */}
-            {/* {trip.userRole === "owner" && (
+            {/* Start / End Trip */}
+            {trip.userRole === "owner" && (
               <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-white/20">
-                <button
-                  onClick={startTrip}
-                  disabled={tripStarted}
-                  className="w-full flex items-center justify-center gap-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-8 py-4 rounded-2xl shadow-lg font-bold text-lg"
-                >
-                  <span className="text-2xl">🚀</span>
-                  {tripStarted ? "Ongoing" : "Start Your Trip"}
-                </button>
-              </div>
-            )} */}
+                {!tripStatus.started && !tripStatus.ended && (
+                  <button
+                    onClick={startTripHandler}
+                    className="w-full flex items-center justify-center gap-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-8 py-4 rounded-2xl shadow-lg font-bold text-lg"
+                  >
+                    <span className="text-2xl">🚀</span> Start Trip
+                  </button>
+                )}
 
-            
+                {tripStatus.started && !tripStatus.ended && (
+                  <>
+                    <span className="block text-center font-semibold text-lg mb-2">
+                      Trip Ongoing 🚀
+                    </span>
+                    <button
+                      onClick={endTripHandler}
+                      className="w-full bg-red-500 text-white py-3 rounded-2xl font-bold"
+                    >
+                      End Trip
+                    </button>
+                  </>
+                )}
+
+                {tripStatus.ended && (
+                  <span className="block text-center font-semibold text-lg text-gray-500">
+                    Trip Ended ✅
+                  </span>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
+
+      {/* LiveMap */}
+      {tripStatus.started && !tripStatus.ended && (
+        <LiveMap tripId={tripId} userId={user._id || user.id} />
+      )}
     </div>
   );
 };
