@@ -28,8 +28,7 @@ console.log(trips)
     }
   };
 
-  console.log(trips)
-
+  // console.table(trips)
 
   const formatDate = (dateString) => {
     const options = { year: "numeric", month: "short", day: "numeric" };
