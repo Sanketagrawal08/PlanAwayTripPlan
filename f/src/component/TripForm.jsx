@@ -34,19 +34,17 @@ const TripForm = () => {
     }
   };
 
-
-
-  return (
+ return (
     <div className="relative min-h-screen flex items-center justify-center p-4">
-      {/* Background Image */}
+     
       <div
         className="absolute inset-0 bg-cover bg-center"
         style={{ backgroundImage: `url(${pahad2})` }}
       />
-      {/* Dark Overlay */}
+  
       <div className="absolute inset-0 bg-black-75 bg-opacity-50" />
 
-      {/* X Button on top-right */}
+   
       <button
         onClick={() => navigate("/home")}
         className="absolute top-6 right-6 bg-gray-200 hover:bg-gray-300 p-3 rounded-full z-20 shadow-lg"

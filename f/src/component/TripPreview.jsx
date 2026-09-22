@@ -7,10 +7,12 @@ const TripPreview = () => {
   const { state } = useLocation();
 
   const { tripOutline, formData } = state || {};
+
   const [editedTrip, setEditedTrip] = useState(tripOutline || []);
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
  const navigate = useNavigate()
+
   const handleEditPlace = (dayIndex, timeOfDay, value) => {
     const updated = [...editedTrip];
     updated[dayIndex][timeOfDay].place = value;

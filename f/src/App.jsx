@@ -34,7 +34,7 @@ const routes = createBrowserRouter([
   {
     element: (
       <ProtectedRoute>
-        <Layout />   {/* 👈 Navbar humesha visible inside protected layout */}
+        <Layout />   {/*  Navbar humesha visible inside protected layout */}
       </ProtectedRoute>
     ),
     children: [
