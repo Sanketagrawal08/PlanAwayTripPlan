@@ -252,6 +252,7 @@ Rules:
     res.status(500).json({ error: "Failed to generate trip overview" });
   }
 };
+
 export const saveTripController = async (req, res) => {
   try {
     const userId = req.user.id || req.user._id;
