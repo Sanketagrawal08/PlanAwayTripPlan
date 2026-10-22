@@ -28,6 +28,156 @@ async function fetchPlacePhoto(placeName) {
   }
 }
 
+
+// import OpenAI from "openai";
+// import { jsonrepair } from "jsonrepair";
+
+// const openai = new OpenAI({
+//   apiKey: process.env.OPENAI_API_KEY,
+// });
+
+// export const generateTripOverviewController = async (req, res) => {
+//   const {
+//     title,
+//     country,
+//     destination,
+//     budget,
+//     travellers,
+//     days,
+//   } = req.body;
+
+//   const prompt = `
+// You are a travel assistant. Generate a ${days}-day trip plan
+// for ${destination}, ${country}.
+
+// Trip title: ${title}
+// Budget: INR ${budget}.
+// Travellers: ${travellers}.
+
+// Return the result strictly in this JSON format:
+// {
+//   "trip_outline": [
+//     {
+//       "day": 1,
+//       "morning": {
+//         "place": "Place Name",
+//         "best_time_to_visit": "09:00-12:00"
+//       },
+//       "afternoon": {
+//         "place": "Place Name",
+//         "best_time_to_visit": "12:00-16:00"
+//       },
+//       "evening": {
+//         "place": "Place Name",
+//         "best_time_to_visit": "16:00-20:00"
+//       }
+//     }
+//   ]
+// }
+
+// Rules:
+// - Return valid JSON only, without markdown or extra text.
+// - Each day must have morning, afternoon and evening.
+// - Each time slot must include place and best_time_to_visit.
+// - trip_outline must contain exactly ${days} entries.
+// - Keep the itinerary realistic for the destination and budget.
+// `;
+
+//   try {
+//     // 1. Generate the trip using OpenAI
+//     const response = await openai.responses.create({
+//       model: "gpt-4o-mini",
+//       input: [
+//         {
+//           role: "system",
+//           content:
+//             "You are a travel planner. Return only valid JSON.",
+//         },
+//         {
+//           role: "user",
+//           content: prompt,
+//         },
+//       ],
+//       text: {
+//         format: {
+//           type: "json_object",
+//         },
+//       },
+//     });
+
+//     const rawText = response.output_text;
+
+//     if (!rawText) {
+//       throw new Error("OpenAI returned an empty response");
+//     }
+
+//     // 2. Parse the JSON safely
+//     let tripData;
+
+//     try {
+//       tripData = JSON.parse(rawText);
+//     } catch (err) {
+//       console.warn("JSON parsing failed; attempting repair");
+
+//       try {
+//         tripData = JSON.parse(jsonrepair(rawText));
+//       } catch (repairError) {
+//         console.error("JSON repair failed:", repairError.message);
+
+//         return res.status(500).json({
+//           error: "AI JSON response invalid",
+//         });
+//       }
+//     }
+
+//     // 3. Validate the response structure
+//     if (
+//       !tripData ||
+//       !Array.isArray(tripData.trip_outline) ||
+//       tripData.trip_outline.length !== Number(days)
+//     ) {
+//       return res.status(500).json({
+//         error: "AI returned an invalid trip outline",
+//       });
+//     }
+
+//     // 4. Fetch images for all places
+//     const times = ["morning", "afternoon", "evening"];
+
+//     for (const day of tripData.trip_outline) {
+//       for (const time of times) {
+//         const place = day[time];
+
+//         if (place && place.place) {
+//           try {
+//             place.place_image_url =
+//               (await fetchPlacePhoto(place.place)) || FALLBACK_IMAGE;
+//           } catch (imageError) {
+//             console.error("Image fetch failed:", imageError.message);
+//             place.place_image_url = FALLBACK_IMAGE;
+//           }
+//         } else {
+//           return res.status(500).json({
+//             error: `Missing place for day ${day.day}, ${time}`,
+//           });
+//         }
+//       }
+//     }
+
+//     // 5. Send the response
+//     return res.json({
+//       overview: tripData,
+//     });
+//   } catch (err) {
+//     console.error("OpenAI API Error:", err);
+
+//     return res.status(500).json({
+//       error: "Failed to generate trip overview",
+//     });
+//   }
+// };
+
+
 export const generateTripOverviewController = async (req, res) => {
   const { title, country, destination, budget, travellers, days } = req.body;
 
@@ -102,7 +252,6 @@ Rules:
     res.status(500).json({ error: "Failed to generate trip overview" });
   }
 };
-
 export const saveTripController = async (req, res) => {
   try {
     const userId = req.user.id || req.user._id;
